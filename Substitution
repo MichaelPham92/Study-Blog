@@ -1,0 +1,109 @@
+#include <cs50.h>
+#include <stdio.h>
+#include <string.h>
+
+const int a = 1;
+const string alphabet = "abcdefghijklmnopqrstuvwxyz";
+const string alphabet_cap = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+int main(int argc, string argv[])
+{
+    if (argc != 2 && argc <= 1)
+    {
+        printf("missing key argument\n");
+        return 1;
+    }
+    else if (argc != 2 && argc > 2)
+    {
+        printf("too many key arguments\n");
+        return 1;
+    }
+    else
+    {
+        // Testing if the key length is longer or shorter than 26
+        if (strlen(argv[a]) != 26)
+        {
+            printf("Invalid Key\n");
+            return 1;
+        }
+        // Testing if the key characters are repeated
+        char buffer[strlen(argv[a])];
+        for (int i = 0, n = strlen(argv[a]); i < n; i++)
+        {
+            if ((argv[a][i] < 'a' && argv[a][i] > 'Z') || argv[a][i] > 'z' || argv[a][i] < 'A')
+            {
+                printf("Invalid Key\n");
+                return 1;
+            }
+            else
+            {
+                buffer[i] = argv[a][i];
+            }
+            for (int q = i + 1; q < n + 1; q++)
+            {
+                if (buffer[i] == argv[a][q])
+                {
+                    printf("Invalid Key\n");
+                    return 1;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+        }
+        // Testing
+        string s = get_string("plaintext: ");       // request plain text
+        int m = strlen(s);                          // length of plain text
+        int l = strlen(alphabet);                   // limit is the length of alphabet
+        char cipher[m + 1];
+        //printf("m = %i\n", m);                      // testing plain text length
+        //printf("l = %i\n", l);                      // testing alphabet length
+        // Comparing each letter in the plain text with each letter of alphabet
+        for (int j = 0; j < m + 1; j++)
+        {
+            for (int k = 0; k < l + 1; k++)
+            {
+                if (s[j] >= 'a' && s[j] <= 'z')
+                {
+                    // If letters are matched, encrypt the letter. If not matched, next.
+                    if (s[j] == alphabet[k])
+                    {
+                        if (argv[a][k] >= 'A' && argv[a][k] <= 'Z')
+                        {
+                            argv[a][k] += 32;       // Convert key's letter to lower if text's letter is lower
+                            cipher[j] = argv[a][k];
+                        }
+                        else if (argv[a][k] >= 'a' && argv[a][k] <= 'z')
+                        {
+                            cipher[j] = argv[a][k];
+                        }
+                    }
+                }
+                if (s[j] >= 'A' && s[j] <= 'Z')
+                {
+                    // If letters are matched, encrypt the letter. If not matched, next.
+                    if (s[j] == alphabet_cap[k])
+                    {
+                        if (argv[a][k] >= 'A' && argv[a][k] <= 'Z')
+                        {
+                            cipher[j] = argv[a][k];
+                        }
+                        else if (argv[a][k] >= 'a' && argv[a][k] <= 'z')
+                        {
+                            argv[a][k] -= 32;       // Convert key's letter to upper if text's letter is upper
+                            cipher[j] = argv[a][k];
+                        }
+                    }
+                }
+                // If plain text includes non-letter symbol, keep it the same.
+                else if ((s[j] < 'a' && s[j] > 'Z') || s[j] > 'z' || s[j] < 'A')
+                {
+                    cipher[j] = s[j];
+                }
+            }
+        }
+        printf("ciphertext: %s\n", cipher);
+    }
+    return 0;
+}
