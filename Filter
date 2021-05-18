@@ -1,0 +1,394 @@
+#include "helpers.h"
+#include "math.h"
+
+// Convert image to grayscale
+void grayscale(int height, int width, RGBTRIPLE image[height][width])
+{
+    int avg = 0;
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            avg = round((image[i][j].rgbtRed + image[i][j].rgbtGreen + image[i][j].rgbtBlue) / (3.0));
+            image[i][j].rgbtRed = avg;
+            image[i][j].rgbtGreen = avg;
+            image[i][j].rgbtBlue = avg;
+        }
+    }
+    return;
+}
+
+// Convert image to sepia
+void sepia(int height, int width, RGBTRIPLE image[height][width])
+{
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            float sepiaRed = 0, sepiaBlue = 0, sepiaGreen = 0;
+            
+            sepiaRed = (.393 * (float)image[i][j].rgbtRed) + (.769 * (float)image[i][j].rgbtGreen) + (.189 * (float)image[i][j].rgbtBlue);
+            sepiaGreen = (.349 * (float)image[i][j].rgbtRed) + (.686 * (float)image[i][j].rgbtGreen) + (.168 * (float)image[i][j].rgbtBlue);
+            sepiaBlue = (.272 * (float)image[i][j].rgbtRed) + (.534 * (float)image[i][j].rgbtGreen) + (.131 * (float)image[i][j].rgbtBlue);
+            
+            if (sepiaRed > 255)
+            {
+                sepiaRed = 255;
+            }
+            if (sepiaGreen > 255)
+            {
+                sepiaGreen = 255;
+            }
+            if (sepiaBlue > 255)
+            {
+                sepiaBlue = 255;
+            }
+            
+            image[i][j].rgbtRed = round(sepiaRed);
+            image[i][j].rgbtGreen = round(sepiaGreen);
+            image[i][j].rgbtBlue = round(sepiaBlue);
+        }
+    }
+    return;
+}
+
+// Reflect image horizontally
+void reflect(int height, int width, RGBTRIPLE image[height][width])
+{
+    int red_temp = 0;
+    int green_temp = 0;
+    int blue_temp = 0;
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width / 2; j++)
+        {
+            if (j == width - j - 1)
+            {
+                continue;
+            }
+            else
+            {
+                red_temp = image[i][j].rgbtRed;
+                green_temp = image[i][j].rgbtGreen;
+                blue_temp = image[i][j].rgbtBlue;
+
+                image[i][j].rgbtRed = image[i][width - 1 - j].rgbtRed;
+                image[i][j].rgbtGreen = image[i][width - 1 - j].rgbtGreen;
+                image[i][j].rgbtBlue = image[i][width - 1 - j].rgbtBlue;
+
+                image[i][width - 1 - j].rgbtRed = red_temp;
+                image[i][width - 1 - j].rgbtGreen = green_temp;
+                image[i][width - 1 - j].rgbtBlue = blue_temp;
+            }
+        }
+    }
+    return;
+}
+
+// Blur image
+void blur(int height, int width, RGBTRIPLE image[height][width])
+{
+    //count total pixels
+    int counth = 0;
+    int countw = 0;
+    for (int a = 0; a < height; a++)
+    {
+        for (int b = 0; b < width; b++)
+        {
+            countw++;
+        }
+        counth++;
+    }
+    //Temp arrays
+    int tmpR[counth][countw];
+    int tmpG[counth][countw];
+    int tmpB[counth][countw];
+    // Making loop to go through height of 2D array of the image.
+    for (int i = 0; i < height; i++)
+    {
+        // Making loop to go through weight of 2D array of the image.
+        for (int j = 0; j < width; j++)
+        {
+            int red = 0, blue = 0, green = 0;
+            // in case the image is on first top line
+            if (i == 0)
+            {
+                // in case the image is on the top most left
+                if (j == 0)
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i + k][j + z].rgbtRed;
+                            blue += image[i + k][j + z].rgbtBlue;
+                            green += image[i + k][j + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (4.0));
+                    tmpB[i][j] = round(blue / (4.0));
+                    tmpG[i][j] = round(green / (4.0));
+                }
+                // in case the image is on the top most right
+                else if (j == (width - 1))
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i + k][j - 1 + z].rgbtRed;
+                            blue += image[i + k][j - 1 + z].rgbtBlue;
+                            green += image[i + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (4.0));
+                    tmpB[i][j] = round(blue / (4.0));
+                    tmpG[i][j] = round(green / (4.0));
+                }
+                // in case the image is on the top but not right/left edge
+                else
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 3; z++)
+                        {
+                            red += image[i + k][j - 1 + z].rgbtRed;
+                            blue += image[i + k][j - 1 + z].rgbtBlue;
+                            green += image[i + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (6.0));
+                    tmpB[i][j] = round(blue / (6.0));
+                    tmpG[i][j] = round(green / (6.0));
+                }
+            }
+            // in case the image is on bottom line
+            else if (i == (height - 1))
+            {
+                // in case the image is on the bottom most left
+                if (j == 0)
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i - 1 + k][j + z].rgbtRed;
+                            blue += image[i - 1 + k][j + z].rgbtBlue;
+                            green += image[i - 1 + k][j + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (4.0));
+                    tmpB[i][j] = round(blue / (4.0));
+                    tmpG[i][j] = round(green / (4.0));
+                }
+                // in case the image is on the bottom most right
+                else if (j == (width - 1))
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i - 1 + k][j - 1 + z].rgbtRed;
+                            blue += image[i - 1 + k][j - 1 + z].rgbtBlue;
+                            green += image[i - 1 + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (4.0));
+                    tmpB[i][j] = round(blue / (4.0));
+                    tmpG[i][j] = round(green / (4.0));
+                }
+                // in case the image is on the bottom but not left/right edge
+                else
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        for (int z = 0; z < 3; z++)
+                        {
+                            red += image[i - 1 + k][j - 1 + z].rgbtRed;
+                            blue += image[i - 1 + k][j - 1 + z].rgbtBlue;
+                            green += image[i - 1 + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (6.0));
+                    tmpB[i][j] = round(blue / (6.0));
+                    tmpG[i][j] = round(green / (6.0));
+                }
+            }
+            // in case the image is in middle not on top/bottom edge
+            else
+            {
+                // in case the image is in middle most left
+                if (j == 0)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i - 1 + k][j + z].rgbtRed;
+                            blue += image[i - 1 + k][j + z].rgbtBlue;
+                            green += image[i - 1 + k][j + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (6.0));
+                    tmpB[i][j] = round(blue / (6.0));
+                    tmpG[i][j] = round(green / (6.0));
+                }
+                // in case the image is in middle most right
+                else if (j == (width - 1))
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        for (int z = 0; z < 2; z++)
+                        {
+                            red += image[i - 1 + k][j - 1 + z].rgbtRed;
+                            blue += image[i - 1 + k][j - 1 + z].rgbtBlue;
+                            green += image[i - 1 + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (6.0));
+                    tmpB[i][j] = round(blue / (6.0));
+                    tmpG[i][j] = round(green / (6.0));
+                }
+                // in case the image is in center area
+                else
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        for (int z = 0; z < 3; z++)
+                        {
+                            red += image[i - 1 + k][j - 1 + z].rgbtRed;
+                            blue += image[i - 1 + k][j - 1 + z].rgbtBlue;
+                            green += image[i - 1 + k][j - 1 + z].rgbtGreen;
+                        }
+                    }
+                    tmpR[i][j] = round(red / (9.0));
+                    tmpB[i][j] = round(blue / (9.0));
+                    tmpG[i][j] = round(green / (9.0));
+                }
+            }
+        }
+    }
+    // Reset new values
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            image[i][j].rgbtRed = tmpR[i][j];
+            image[i][j].rgbtGreen = tmpG[i][j];
+            image[i][j].rgbtBlue = tmpB[i][j];
+        }
+    }
+    return;
+}
+
+
+// Back up solution for Blur
+/*
+    //count total pixels
+    int counth = 0;
+    int countw = 0;
+    for (int a = 0; a < height; a++)
+    {
+        for (int b = 0; b < width; b++)
+        {
+            countw++;
+        }
+        counth++;
+    }
+    //Temp arrays
+    int tmpR[counth][countw];
+    int tmpG[counth][countw];
+    int tmpB[counth][countw];
+    
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            
+            
+            if(i == 0 && j == 0)
+            {
+                //build box for calculation for left top of box
+                tmpR[i][j] = round((image[i][j].rgbtRed + image[i][j + 1].rgbtRed + image[i + 1][j].rgbtRed + image[i + 1][j + 1].rgbtRed) / 4.0);
+                tmpG[i][j] = round((image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen + image[i + 1][j].rgbtGreen + image[i + 1][j + 1].rgbtGreen) / 4.0);
+                tmpB[i][j] = round((image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue + image[i + 1][j].rgbtBlue + image[i + 1][j + 1].rgbtBlue) / 4.0);
+
+            }
+            else if (i == 0 && j == (width - 1))
+            {
+                //build box for calculation for right top corner of box
+                tmpR[i][j] = round((image[i][j - 1].rgbtRed + image[i][j].rgbtRed + image[i + 1][j - 1].rgbtRed + image[i + 1][j].rgbtRed) / 4.0);
+                tmpG[i][j] = round((image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen + image[i + 1][j - 1].rgbtGreen + image[i + 1][j].rgbtGreen) / 4.0);
+                tmpB[i][j] = round((image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue + image[i + 1][j - 1].rgbtBlue + image[i + 1][j].rgbtBlue) / 4.0);
+
+            }
+            else if (i == height - 1  && j == 0)
+            {
+                //build box for calculation for left bottom corner of box
+                tmpR[i][j] = round((image[i - 1][j].rgbtRed + image[i - 1][j + 1].rgbtRed + image[i][j].rgbtRed + image[i][j + 1].rgbtRed) / 4.0);
+                tmpG[i][j] = round((image[i - 1][j].rgbtGreen + image[i - 1][j + 1].rgbtGreen + image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen) / 4.0);
+                tmpB[i][j] = round((image[i - 1][j].rgbtBlue + image[i - 1][j + 1].rgbtBlue + image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue) / 4.0);
+            ;
+
+            }
+            else if (i == height - 1 && j ==  (width - 1))
+            {
+                //build box for calculation for right bottom corner of box
+                tmpR[i][j] = round((image[i - 1][j - 1].rgbtRed + image[i - 1][j].rgbtRed + image[i][j - 1].rgbtRed + image[i][j].rgbtRed) / 4.0);
+                tmpG[i][j] = round((image[i - 1][j - 1].rgbtGreen + image[i - 1][j].rgbtGreen + image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen) / 4.0);
+                tmpB[i][j] = round((image[i - 1][j - 1].rgbtBlue + image[i - 1][j].rgbtBlue + image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue) / 4.0);
+
+            }
+            else if (i == 0)
+            {
+                //build box for calculation for top of box
+                tmpR[i][j] = round((image[i][j - 1].rgbtRed + image[i][j].rgbtRed + image[i][j + 1].rgbtRed + image[i + 1][j - 1].rgbtRed + image[i + 1][j].rgbtRed + image[i + 1][j + 1].rgbtRed) / 6.0);
+                tmpG[i][j] = round((image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen + image[i + 1][j - 1].rgbtGreen + image[i + 1][j].rgbtGreen + image[i + 1][j + 1].rgbtGreen) / 6.0);
+                tmpB[i][j] = round((image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue + image[i + 1][j - 1].rgbtBlue + image[i + 1][j].rgbtBlue + image[i + 1][j + 1].rgbtBlue) / 6.0);
+
+            }
+            else if (i == (height - 1))
+            {
+                //build box for calculation for bottom of box
+                tmpR[i][j] = round((image[i - 1][j - 1].rgbtRed + image[i - 1][j].rgbtRed + image[i - 1][j + 1].rgbtRed + image[i][j - 1].rgbtRed + image[i][j].rgbtRed + image[i][j + 1].rgbtRed) / 6.0);
+                tmpG[i][j] = round((image[i - 1][j - 1].rgbtGreen + image[i - 1][j].rgbtGreen + image[i - 1][j + 1].rgbtGreen + image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen) / 6.0);
+                tmpB[i][j] = round((image[i - 1][j - 1].rgbtBlue + image[i - 1][j].rgbtBlue + image[i - 1][j + 1].rgbtBlue + image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue) / 6.0);
+
+            }
+            else if (j == 0)
+            {
+                //build box for calculation for left of box
+                tmpR[i][j] = round((image[i - 1][j].rgbtRed + image[i - 1][j + 1].rgbtRed + image[i][j].rgbtRed + image[i][j + 1].rgbtRed + image[i + 1][j].rgbtRed + image[i + 1][j + 1].rgbtRed) / 6.0);
+                tmpG[i][j] = round((image[i - 1][j].rgbtGreen + image[i - 1][j + 1].rgbtGreen + image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen + image[i + 1][j].rgbtGreen + image[i + 1][j + 1].rgbtGreen) / 6.0);
+                tmpB[i][j] = round((image[i - 1][j].rgbtBlue + image[i - 1][j + 1].rgbtBlue + image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue + image[i + 1][j].rgbtBlue + image[i + 1][j + 1].rgbtBlue) / 6.0);
+
+            }
+            else if (j == (width - 1))
+            {
+                //build box for calculation for right of box
+                tmpR[i][j] = round((image[i - 1][j - 1].rgbtRed + image[i - 1][j].rgbtRed + image[i][j - 1].rgbtRed + image[i][j].rgbtRed + image[i + 1][j - 1].rgbtRed + image[i + 1][j].rgbtRed) / 6.0);
+                tmpG[i][j] = round((image[i - 1][j - 1].rgbtGreen + image[i - 1][j].rgbtGreen + image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen + image[i + 1][j - 1].rgbtGreen + image[i + 1][j].rgbtGreen) / 6.0);
+                tmpB[i][j] = round((image[i - 1][j - 1].rgbtBlue + image[i - 1][j].rgbtBlue + image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue + image[i + 1][j - 1].rgbtBlue + image[i + 1][j].rgbtBlue) / 6.0);
+
+            }
+            else
+            {
+                //build box for calculation for center digits
+                tmpR[i][j] = round((image[i - 1][j - 1].rgbtRed + image[i - 1][j].rgbtRed + image[i - 1][j + 1].rgbtRed + image[i][j - 1].rgbtRed + image[i][j].rgbtRed + image[i][j + 1].rgbtRed + image[i + 1][j - 1].rgbtRed + image[i + 1][j].rgbtRed + image[i + 1][j + 1].rgbtRed) / 9.0);
+                tmpG[i][j] = round((image[i - 1][j - 1].rgbtGreen + image[i - 1][j].rgbtGreen + image[i - 1][j + 1].rgbtGreen + image[i][j - 1].rgbtGreen + image[i][j].rgbtGreen + image[i][j + 1].rgbtGreen + image[i + 1][j - 1].rgbtGreen + image[i + 1][j].rgbtGreen + image[i + 1][j + 1].rgbtGreen) / 9.0);
+                tmpB[i][j] = round((image[i - 1][j - 1].rgbtBlue + image[i - 1][j].rgbtBlue + image[i - 1][j + 1].rgbtBlue + image[i][j - 1].rgbtBlue + image[i][j].rgbtBlue + image[i][j + 1].rgbtBlue + image[i + 1][j - 1].rgbtBlue + image[i + 1][j].rgbtBlue + image[i + 1][j + 1].rgbtBlue) / 9.0);
+
+            }
+        }
+    }
+    
+    // Reset new values
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            image[i][j].rgbtRed = tmpR[i][j];
+            image[i][j].rgbtGreen = tmpG[i][j];
+            image[i][j].rgbtBlue = tmpB[i][j];
+        }
+    }*/
