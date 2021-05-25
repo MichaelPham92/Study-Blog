@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+// Max size of JPEG block
+#define Block 512
+
+typedef uint8_t BYTE;
+
+int main(int argc, char *argv[])
+{
+  if(argc != 2)
+    {
+        fprintf(stderr, "Usage: ./recover card.raw");
+        return 1;
+    }
+  // Remember filenames. First argument is JPEG raw file.
+  char *infile = argv[1];
+
+  // Open input file
+  FILE *inptr = fopen(infile, "r");
+  if (inptr == NULL)
+  {
+    fprintf(stderr, "Could not open %s.\n", infile);
+    return 2;
+  }
+  // Create pointer for new file
+  FILE *outptr;
+  // Read block by block of 512 bytes to check if find the JPEG header (0xff 0xd8 0xff and 0xe0|1|2...)
+  // Using fread(data, size, number, inptr) with:
+  // data: pointer to where to store data you are reading
+  // size: number of bytes or size of each element try to read from the file.
+  // number: number of element try to read all at once
+  // inptr: FILE * to read the data from.
+  int track = 0;
+  // JPEG Starting Signiture is found
+  bool start = false;
+  // Reset and count number of new JPEG file created
+  int num_files = 0;
+  // Once find this block with starting header, open up new JPEG file and start writing block after block.
+  char outfile[8];
+  // array used to store data being read from memory card
+  BYTE storage[Block];
+
+  while (fread(storage, sizeof(storage), 1, inptr) == 1)
+  //while(!feof(inptr))
+  {
+    // Flag on whether new jpeg needs to be written
+    bool new_write = false;
+    // Read 1 512-block into a buffer or an array of bytes
+    //fread(storage, sizeof(storage), 1, inptr);
+    
+    // In case starting signal already found
+    if (start)
+    {
+      // and starting signal is found again
+      if (storage[0] == 0xff && storage[1] == 0xd8 && storage[2] == 0xff && (storage[3] & 0xf0) == 0xe0)
+      {
+        // Counter for every time a JPEG image is found
+        num_files++;
+        new_write = true;
+        // Closing previous output file
+        fclose(outptr);
+      }
+      if (new_write)
+      {
+        sprintf(outfile, "%03i.jpg", num_files);
+        // Open output file
+        outptr = fopen(outfile, "w");
+      }
+      else
+      {
+        fclose(outptr);
+        outptr = fopen(outfile, "a");
+      }
+      // Write the remaining 512-blocks
+      fwrite(storage, sizeof(storage), 1, outptr);
+    }
+    
+    // Check if first byte in buffer is 0xff AND the 2nd byte in buffer is 0xd8 AND the 3rd byte in buffer is 0xff
+    // AND Using bitwise arithmetic on the 4th byte of buffer and with 0xf0 equal 0xe0
+    if (storage[0] == 0xff && storage[1] == 0xd8 && storage[2] == 0xff && (storage[3] & 0xf0) == 0xe0 && start == false)
+    {
+      start = true;
+      // Making a new JPEG with sprintf(filename, "%03i.jpg", 0) starting at 000 then 001 ...
+      sprintf(outfile, "%03i.jpg", num_files);
+      // Open output file
+      outptr = fopen(outfile, "w");
+      // check if the outfile can be opened
+      if (outptr == NULL)
+      {
+        fclose(inptr);
+        fprintf(stderr, "Could not create %s.\n", outfile);
+        return 3;
+      }
+      // Write 1st 512-Block into a buffer or an array of bytes
+      fwrite(storage, sizeof(storage), 1, outptr);
+      //num_files++;
+    }
+  }
+
+  fclose(inptr);
+  fclose(outptr);
+  // Success
+  return 0;
+}
